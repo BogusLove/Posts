@@ -200,7 +200,6 @@ function arrayIncludes(post, tag, count) {
 
 function sortPostsByTags() {
 	const sort_tags = localStorage.getItem('tags_sort').split(' ');
-	let arr = [];
 	let arr1 = [];
 	let arr2 = [];
 	let arr3 = [];
