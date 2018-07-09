@@ -1,18 +1,26 @@
 'use strict'
 
+let DATA = [];
+let SORTED = [];
 window.onload = () => {
 	document.getElementById('giveOnly10').addEventListener('click', giveTenPosts);
-	document.getElementById('search_input').onkeyup = search;
-	localStorage.setItem('postIndex', 0);
+	document.getElementById('search_input').onkeyup = search;	
 	
-	getNextChunk(true)
-		.then(posts => {
+	getData(true)
+		.then(posts => {	
+			posts.forEach(singlePost => {
+				DATA.push(singlePost);
+			});
+			SORTED = [...DATA];
+			
+			localStorage.setItem('postIndex', 0);
+
 			setTags(posts).forEach(tag => createTagBody(tag));
+
 			Array
 				.from(document.getElementsByClassName('tag_name'))
 				.forEach(tag => {
 					tag.addEventListener('click', tagsClick);
-					console.log(tag);
 					if (localStorage.getItem('tags_sort')) {
 						const saved_tags = localStorage.getItem('tags_sort').split(' ');
 						for (let i = 0; i < saved_tags.length; i++) {
@@ -20,46 +28,27 @@ window.onload = () => {
 						}
 					}
 				})
-		})
-		.catch(console.log);
+				
+	
+				render(getHTMLFromArray(get10Posts()));				
 
-	getNextChunk()
-		.then(posts => {
-			posts.forEach(singlePost => createPostBody(singlePost));
 			if (!localStorage.getItem('been_here')) {
 				sortPostsByDate(-1);
 				localStorage.setItem('been_here', true);
 			} else if (localStorage.getItem('tags_sort')) sortPostsByTags();
 		})
-		.catch(alert);
+		.catch(alert);	
 }
 
 window.onscroll = function(e) {
-	// const s_top = document.getElementsByTagName('body')[0].scrollTop;
-	// const post_10_top = document.getElementById('Content').lastChild.offset().top;	
-	// console.log(s_top, post_10_top);
-	
-	// if (s_top > post_10_top) {
-	// 	disableScroll();
-	// 	getNextChunk()
-	// 		.then(posts => {
-	// 			posts ? posts.forEach(singlePost => createPostBody(singlePost)) : 0;
-	// 		})
-	// 		.catch(alert);
-	// 	enableScroll();
-	// }
     if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight)) {
 		disableScroll();
-		getNextChunk()
-			.then(posts => {
-				posts ? posts.forEach(singlePost => createPostBody(singlePost)) : 0;
-			})
-			.catch(alert);
-	}	
-	enableScroll();
+		render(getHTMLFromArray(get10Posts()));
+		enableScroll();
+	}		
 };
 
-function getNextChunk(end = false) {	
+function getData(end = false) {	
 	return fetch('https://api.myjson.com/bins/152f9j')
 		.then(response => {
 			if (response.status !== '200' && response.ok) {
@@ -67,20 +56,30 @@ function getNextChunk(end = false) {
 			}			
 		})
 		.then(posts => {
-			let position = parseInt(localStorage.getItem('postIndex'));
-			if (!end && position <= posts.data.length - 10) {
-				const { data } = posts;
-				let arr = [];
-				for (let i = position; i < position + 10; i++) {	
-					arr.push(data[i]);
-				}
-				localStorage.setItem('postIndex', position + 10);
-				return arr;
-			} else if (end) {
-				return posts.data;
-			}
+			// let position = parseInt(localStorage.getItem('postIndex'));
+			// if (!end && position <= posts.data.length - 10) {
+			// 	const { data } = posts;
+			// 	let arr = [];
+			// 	for (let i = position; i < position + 10; i++) {	
+			// 		arr.push(data[i]);
+			// 	}
+			// 	localStorage.setItem('postIndex', position + 10);
+			return posts.data;
+			// } else if (end) {
+			// 	return posts.data;
+			// }
 		})
 		.catch(alert);
+}
+
+function get10Posts() {
+	let position = parseInt(localStorage.getItem('postIndex'));
+	let arr = [];
+	if (position <= SORTED.length - 10) {
+		arr = SORTED.slice(position, position + 10);
+		localStorage.setItem('postIndex', position + 10);
+	}
+	return arr;
 }
 
 function createPostBody(post){
@@ -91,8 +90,8 @@ function createPostBody(post){
 	let body = '<div class="post"><img src="' + image + 
 	'"><h2>' + title + '</h2><span>' + description + 
 	'</span><br><br><span>Date of creation: </span></span>' + createdAt + 
-	'</span><br><br>Tags:<ul class="tags">' + ul + '</ul><button class="delete_btn" onClick="deletePost(this)">Delete</button></div>';
-	Content.insertAdjacentHTML('beforeend', body);
+	'</span><br><br>Tags:<ul class="tags">' + ul + '</ul><button class="delete_btn" onClick="deletePost(this)">Delete</button></div>';	
+	return body;
 }
 
 function createTagBody(tag) {
@@ -101,27 +100,20 @@ function createTagBody(tag) {
 	tags.insertAdjacentHTML('beforeend', body);
 }
 
+function getHTMLFromArray(arr) {
+	let newArr = [];
+	for (let i = 0; i < arr.length; i++) {
+		newArr.push(createPostBody(arr[i]));
+	}	
+	return newArr;
+}
+
 function deletePost(event, parent = true){
 	parent ? event.parentNode.remove() : event.remove();
 }
 
 function giveTenPosts() { 
-	//1. 
-	// const content = document.getElementById('Content');
-	// const posts = document.getElementsByClassName('post');
-	// let i = posts.length;
-	// while (i != 10) {
-	// 	content.removeChild(content.lastChild);
-	// 	i--;
-	// }
-
-	//2.
 	location.reload(); 
-
-	//THIS METHOD HAS TWO VARIANTS: 
-	//1. BY REMOVING NODES > 10 INITITAL POSTS AND THEN RELOADING PAGE TO GET NEXT NEW 10 POSTS BY SCROLL
-	//2. BY RELOADING PAGE AND GET 10 INITIAL POSTS WITH OPPORTUNITY TO SCROLL AND GET NEW 10 POSTS
-	//I DECIDE TO USE SECOND
 }
 
 function search(event) {
@@ -159,21 +151,20 @@ function tagsClick(event) {
 	}
 }
 
-function sortPostsByDate(increase = 1) {
-	const content = document.getElementById('Content');
-	const posts = document.getElementsByClassName('post');
-	let arr = [...posts];
-	arr.sort((a, b) => {
-		return increase * (toComparableDate(b) - toComparableDate(a));
-	});	
+function sortPostsByDate(increase = 1) {	
+	SORTED.sort((a, b) => {
+		return increase * (Date.parse(b.createdAt) - Date.parse(a.createdAt));
+	});
 	removeAllChild();
-	for (let i = 0; i < arr.length; i++) {
-		content.insertAdjacentHTML('afterbegin', arr[i].outerHTML);
-	}
+	localStorage.setItem('postIndex', 0);
+	render(getHTMLFromArray(get10Posts()));
 }
 
-function toComparableDate(post) {
-	return Date.parse(post.childNodes[6].textContent);
+function render(arr) {	
+	const content = document.getElementById('Content');
+	for (let i = 0; i < arr.length; i++) {
+		content.insertAdjacentHTML('beforeend', arr[i]);
+	}
 }
 
 function removeAllChild() {
@@ -184,7 +175,7 @@ function removeAllChild() {
 }
 
 function sortByDate(a,b) {	
-	return toComparableDate(b) - toComparableDate(a);
+	return Date.parse(b.createdAt) - Date.parse(a.createdAt);
 }
 
 function getTagsFromPost(post) {
@@ -208,8 +199,6 @@ function arrayIncludes(post, tag, count) {
 }
 
 function sortPostsByTags() {
-	const content = document.getElementById('Content');
-	const posts = Array.from(document.getElementsByClassName('post'));
 	const sort_tags = localStorage.getItem('tags_sort').split(' ');
 	let arr = [];
 	let arr1 = [];
@@ -220,9 +209,10 @@ function sortPostsByTags() {
 	let arr6 = [];
 	let rest = [];
 	if (sort_tags.length === 0) location.reload();
+
 	if (sort_tags.length === 1) {
-		posts.forEach(post => {
-			const post_tags = getTagsFromPost(post);
+		DATA.forEach(post => {
+			const post_tags = post.tags;
 			if (post_tags.length === 1) {
 				if (post_tags.includes(sort_tags[0])) arr1.push(post);
 				else rest.push(post);
@@ -240,94 +230,97 @@ function sortPostsByTags() {
 		arr2.sort(sortByDate);
 		arr3.sort(sortByDate);
 		rest.sort(sortByDate);
-		arr = arr1.concat(arr2.concat(arr3.concat(rest))).reverse();
+		SORTED = [...arr1.concat(arr2.concat(arr3.concat(rest)))];
 	}
+
 	if (sort_tags.length === 2) {	
-		for (let i = 0; i < posts.length; i++) {
-			const post_tags = getTagsFromPost(posts[i]);			
+		DATA.forEach(post => {
+			const post_tags = post.tags;
 			if (post_tags.length === 2) {
-				if (equalArrays(sort_tags, post_tags)) arr1.push(posts[i]);
-				else if (post_tags.includes(sort_tags[0]) || post_tags.includes(sort_tags[1])) arr4.push(posts[i]);
-				else rest.push(posts[i]);
+				if (equalArrays(sort_tags, post_tags)) arr1.push(post);
+				else if (post_tags.includes(sort_tags[0]) || post_tags.includes(sort_tags[1])) arr4.push(post);
+				else rest.push(post);
 			}	
 			if (post_tags.length === 3) {
-				if (post_tags.includes(sort_tags[0]) && post_tags.includes(sort_tags[1])) arr2.push(posts[i]);
-				else if (post_tags.includes(sort_tags[0]) || post_tags.includes(sort_tags[1])) arr5.push(posts[i]);
-				else rest.push(posts[i]);
+				if (post_tags.includes(sort_tags[0]) && post_tags.includes(sort_tags[1])) arr2.push(post);
+				else if (post_tags.includes(sort_tags[0]) || post_tags.includes(sort_tags[1])) arr5.push(post);
+				else rest.push(post);
 			}
 			if (post_tags.length === 1) {
-				if (post_tags.includes(sort_tags[0]) || post_tags.includes(sort_tags[1])) arr3.push(posts[i]);
-				else rest.push(posts[i]);
-			}
-		}	
+				if (post_tags.includes(sort_tags[0]) || post_tags.includes(sort_tags[1])) arr3.push(post);
+				else rest.push(post);
+			}	
+		})		
 		arr1.sort(sortByDate);
 		arr2.sort(sortByDate);
 		arr3.sort(sortByDate);
 		arr4.sort(sortByDate);
 		arr5.sort(sortByDate);
 		rest.sort(sortByDate);
-		arr = arr1.concat(arr2.concat(arr3.concat(arr4.concat(arr5.concat(rest))))).reverse();	
+		SORTED = [...arr1.concat(arr2.concat(arr3.concat(arr4.concat(arr5.concat(rest)))))];				
 	}
+
 	if (sort_tags.length === 3) {
-		for (let i = 0; i < posts.length; i++) {
-			const post_tags = getTagsFromPost(posts[i]);
+		DATA.forEach(post => {
+			const post_tags = post.tags;
 			if (post_tags.length === 3) {
-				if (equalArrays(sort_tags, post_tags)) arr1.push(posts[i]);
-				else if (arrayIncludes(post_tags, sort_tags, 2)) arr3.push(posts[i]);
-				else if (arrayIncludes(post_tags, sort_tags, 1)) arr6.push(posts[i]);
-				else rest.push(posts[i]); 
+				if (equalArrays(sort_tags, post_tags)) arr1.push(post);
+				else if (arrayIncludes(post_tags, sort_tags, 2)) arr3.push(post);
+				else if (arrayIncludes(post_tags, sort_tags, 1)) arr6.push(post);
+				else rest.push(post); 
 			}
 			if (post_tags.length === 2) {
-				if (arrayIncludes(post_tags, sort_tags, 2)) arr2.push(posts[i]);
-				else if (arrayIncludes(post_tags, sort_tags, 1)) arr5.push(posts[i]);
-				else rest.push(posts[i]);
+				if (arrayIncludes(post_tags, sort_tags, 2)) arr2.push(post);
+				else if (arrayIncludes(post_tags, sort_tags, 1)) arr5.push(post);
+				else rest.push(post);
 			}
 			if (post_tags.length === 1) {
-				if (arrayIncludes(post_tags, sort_tags, 1)) arr4.push(posts[i]);
-				else rest.push(posts[i]);
-			}
-		}
-		arr1.sort(sortByDate);
-		arr2.sort(sortByDate);
-		arr3.sort(sortByDate);
-		arr4.sort(sortByDate);
-		arr5.sort(sortByDate);
-		arr6.sort(sortByDate);
-		rest.sort(sortByDate);
-		arr = arr1.concat(arr2.concat(arr3.concat(arr4.concat(arr5.concat(arr6.concat(rest)))))).reverse();	
+				if (arrayIncludes(post_tags, sort_tags, 1)) arr4.push(post);
+				else rest.push(post);
+			}		
+			arr1.sort(sortByDate);
+			arr2.sort(sortByDate);
+			arr3.sort(sortByDate);
+			arr4.sort(sortByDate);
+			arr5.sort(sortByDate);
+			arr6.sort(sortByDate);
+			rest.sort(sortByDate);
+			SORTED = [...arr1.concat(arr2.concat(arr3.concat(arr4.concat(arr5.concat(arr6.concat(rest))))))];
+		});
 	}
+
 	if (sort_tags.length > 3) {
-		for (let i = 0; i < posts.length; i++) {
-			const post_tags = getTagsFromPost(posts[i]);
+		DATA.forEach(post => {
+			const post_tags = post.tags;
 			if (post_tags.length === 3) {
-				if (arrayIncludes(sort_tags, post_tags, 3)) arr1.push(posts[i]);
-				else if (arrayIncludes(post_tags, sort_tags, 2)) arr3.push(posts[i]);
-				else if (arrayIncludes(post_tags, sort_tags, 1)) arr6.push(posts[i]);
-				else rest.push(posts[i]); 
+				if (arrayIncludes(sort_tags, post_tags, 3)) arr1.push(post);
+				else if (arrayIncludes(post_tags, sort_tags, 2)) arr3.push(post);
+				else if (arrayIncludes(post_tags, sort_tags, 1)) arr6.push(post);
+				else rest.push(post); 
 			}
 			if (post_tags.length === 2) {
-				if (arrayIncludes(post_tags, sort_tags, 2)) arr2.push(posts[i]);
-				else if (arrayIncludes(post_tags, sort_tags, 1)) arr5.push(posts[i]);
-				else rest.push(posts[i]);
+				if (arrayIncludes(post_tags, sort_tags, 2)) arr2.push(post);
+				else if (arrayIncludes(post_tags, sort_tags, 1)) arr5.push(post);
+				else rest.push(post);
 			}
 			if (post_tags.length === 1) {
-				if (arrayIncludes(post_tags, sort_tags, 1)) arr4.push(posts[i]);
-				else rest.push(posts[i]);
-			}
-		}
-		arr1.sort(sortByDate);
-		arr2.sort(sortByDate);
-		arr3.sort(sortByDate);
-		arr4.sort(sortByDate);
-		arr5.sort(sortByDate);
-		arr6.sort(sortByDate);
-		rest.sort(sortByDate);
-		arr = arr1.concat(arr2.concat(arr3.concat(arr4.concat(arr5.concat(arr6.concat(rest)))))).reverse();	
+				if (arrayIncludes(post_tags, sort_tags, 1)) arr4.push(post);
+				else rest.push(post);
+			}		
+			arr1.sort(sortByDate);
+			arr2.sort(sortByDate);
+			arr3.sort(sortByDate);
+			arr4.sort(sortByDate);
+			arr5.sort(sortByDate);
+			arr6.sort(sortByDate);
+			rest.sort(sortByDate);
+			SORTED = [...arr1.concat(arr2.concat(arr3.concat(arr4.concat(arr5.concat(arr6.concat(rest))))))];
+		});			
 	}
+
 	removeAllChild();
-	for (let i = 0; i < arr.length; i++) {
-		content.insertAdjacentHTML('afterbegin', arr[i].outerHTML);
-	}
+	localStorage.setItem('postIndex', 0);
+	render(getHTMLFromArray(get10Posts()));
 }
 
 function disableScroll() {		
