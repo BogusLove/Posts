@@ -1,26 +1,32 @@
-
+* {
+    box-sizing: border-box;    
+}
 body {
     display: grid;
     grid-template-rows: 30% auto; 
     grid-row-gap: 5px;
+    box-sizing: border-box;
 }
 #Header {
     display: grid;
-    grid-template-rows: 70% auto;
-    grid-template-columns: 20% auto; 
-    grid-row-gap: 5px;
+    grid-row-gap: 10px;
 }
 #search {
-    grid-column: 1 / 3;
+    grid-column: 2 / 3;
+    justify-self: end;
 }
 #Content {
     display: grid;
     grid-template-columns: repeat(auto-fill, 300px); 
+    grid-gap: 5px;
+    justify-content: center;	
 }
 #up, #giveOnly10 {
+    font-size: 15px;
+    text-align: center;
     text-decoration: none;
     position: fixed;
-    bottom: 20px;
+    bottom: 40px;
     right: 30px;
     z-index: 99;
     border: 1px solid black;
@@ -28,10 +34,16 @@ body {
     color: black;
     cursor: pointer;
     border-radius: 0px;
-    width: 50px;
+    width: 70px;
 }
 #giveOnly10 {
-    bottom: 42px;
+    bottom: 10px;
+}
+#giveOnly10:active {
+    cursor: progress;
+}
+#up {
+    background: yellow;
 }
 button, #search_input {
     border: 1px solid black;
@@ -42,14 +54,29 @@ button, #search_input {
     width: 100px;
 }
 #search_input {
-    width: calc(100% - 10px);
+    width: 200px;
+}
+#search_input:focus{
+    border: 0;
+    border-bottom: 1px solid black;
 }
 .post {
     border: 1px solid black;
 }
 #tag_sort {
     display: grid;
-    grid-template-columns: repeat(auto-fill, 100px);
+    grid-template-columns: repeat(auto-fill, 100px);      
+    justify-content: end;	
+}
+#date_sort {
+    display: grid;
+    grid-row: 1 / 3;
+    grid-template-columns: 50% 50%;
+    justify-content: end;
+}
+.tag {
+    display: block;
+    justify-self: end;
 }
 input[type=checkbox] {
     display: none;
@@ -66,7 +93,26 @@ input[type=checkbox] {
     float: left;
     border: 1px solid black;
     text-align: center;
+    padding: 2px;
 }
 .tag input[type=checkbox]:checked + label {
     background: springgreen;
+}
+.tag label:hover {
+    cursor: cell;
+    border-bottom: 3px solid black;
+}
+.date_btn:hover {
+    background: springgreen;
+    cursor: pointer;
+}
+.post {
+    padding: 3%;
+}
+.delete_btn:hover {
+    background: red;
+    cursor: not-allowed;
+}
+img {
+    justify-self: center;
 }

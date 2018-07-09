@@ -4,40 +4,27 @@ let DATA = [];
 let SORTED = [];
 window.onload = () => {
 	document.getElementById('giveOnly10').addEventListener('click', giveTenPosts);
-	document.getElementById('search_input').onkeyup = search;	
-	
-	getData(true)
-		.then(posts => {	
-			posts.forEach(singlePost => {
-				DATA.push(singlePost);
-			});
-			SORTED = [...DATA];
-			
-			localStorage.setItem('postIndex', 0);
-
-			setTags(posts).forEach(tag => createTagBody(tag));
-
-			Array
-				.from(document.getElementsByClassName('tag_name'))
-				.forEach(tag => {
-					tag.addEventListener('click', tagsClick);
-					if (localStorage.getItem('tags_sort')) {
-						const saved_tags = localStorage.getItem('tags_sort').split(' ');
-						for (let i = 0; i < saved_tags.length; i++) {
-							if (tag.id === saved_tags[i]) tag.checked = true;
-						}
-					}
-				})
-				
-	
-				render(getHTMLFromArray(get10Posts()));				
-
-			if (!localStorage.getItem('been_here')) {
-				sortPostsByDate();
-				localStorage.setItem('been_here', true);
-			} else if (localStorage.getItem('tags_sort')) sortPostsByTags();
+	document.getElementById('search_input').onkeyup = search;		
+	getData().then(posts => {	
+		DATA = [...posts];
+		SORTED = [...DATA];
+		localStorage.setItem('postIndex', 0);
+		setTags(posts).forEach(tag => createTagBody(tag));
+		Array.from(document.getElementsByClassName('tag_name')).forEach(tag => {
+			tag.addEventListener('click', tagsClick);
+			if (localStorage.getItem('tags_sort')) {
+				const saved_tags = localStorage.getItem('tags_sort').split(' ');
+				for (let i = 0; i < saved_tags.length; i++) {
+					if (tag.id === saved_tags[i]) tag.checked = true;
+				}
+			}
 		})
-		.catch(alert);	
+		render(getHTMLFromArray(get10Posts()));
+		if (!localStorage.getItem('been_here')) {
+			sortPostsByDate();
+			localStorage.setItem('been_here', true);
+		} else if (localStorage.getItem('tags_sort')) sortPostsByTags();
+	}).catch(alert);
 }
 
 window.onscroll = function(e) {
@@ -48,7 +35,7 @@ window.onscroll = function(e) {
 	}		
 };
 
-function getData(end = false) {	
+function getData() {	
 	return fetch('https://api.myjson.com/bins/152f9j')
 		.then(response => {
 			if (response.status !== '200' && response.ok) {
@@ -56,18 +43,7 @@ function getData(end = false) {
 			}			
 		})
 		.then(posts => {
-			// let position = parseInt(localStorage.getItem('postIndex'));
-			// if (!end && position <= posts.data.length - 10) {
-			// 	const { data } = posts;
-			// 	let arr = [];
-			// 	for (let i = position; i < position + 10; i++) {	
-			// 		arr.push(data[i]);
-			// 	}
-			// 	localStorage.setItem('postIndex', position + 10);
 			return posts.data;
-			// } else if (end) {
-			// 	return posts.data;
-			// }
 		})
 		.catch(alert);
 }
@@ -83,14 +59,13 @@ function get10Posts() {
 }
 
 function createPostBody(post){
-	const Content = document.getElementById('Content');
 	let { image, description, title, createdAt, tags} = post;
 	let ul = '';
 	tags.forEach(item => { ul += "<li>" + item +"</li>"});
-	let body = '<div class="post"><img src="' + image + 
+	let body = '<div class="post" id="' + title + '"><img src="' + image + 
 	'"><h2>' + title + '</h2><span>' + description + 
 	'</span><br><br><span>Date of creation: </span></span>' + createdAt + 
-	'</span><br><br>Tags:<ul class="tags">' + ul + '</ul><button class="delete_btn" onClick="deletePost(this)">Delete</button></div>';	
+	'</span><br><br>Tags:<ul class="tags">' + ul + '</ul><button class="delete_btn" onClick="deletePost(this)">Delete</button><br></div>';	
 	return body;
 }
 
@@ -108,8 +83,9 @@ function getHTMLFromArray(arr) {
 	return newArr;
 }
 
-function deletePost(event, parent = true){
-	parent ? event.parentNode.remove() : event.remove();
+function deletePost(event) {
+	event.parentNode.remove();
+	SORTED.splice([SORTED.indexOf(SORTED.find(item => {return item.title === event.parentNode.id}))], 1);
 }
 
 function giveTenPosts() { 
@@ -119,7 +95,7 @@ function giveTenPosts() {
 function search(event) {
 	const posts = document.getElementsByClassName('post');
 	for (let i = 0; i < posts.length; i++) {
-		!posts[i].childNodes[1].textContent.toLowerCase().includes(event.target.value) 
+		!posts[i].childNodes[1].textContent.toLowerCase().includes(event.target.value.toLowerCase())
 			? posts[i].style.display = 'none' 
 			: posts[i].style.display = 'block';
 	}
@@ -152,11 +128,11 @@ function tagsClick(event) {
 }
 
 function sortPostsByDate(increase = 1) {	
-	SORTED.sort((a, b) => {
-		return increase * (Date.parse(b.createdAt) - Date.parse(a.createdAt));
-	});
+	Array.from(document.getElementsByClassName('tag_name')).forEach(tag => { tag.checked = false })
+	SORTED.sort((a, b) => {	return increase * (Date.parse(b.createdAt) - Date.parse(a.createdAt)) });
 	removeAllChild();
 	localStorage.setItem('postIndex', 0);
+	localStorage.setItem('tags_sort', '');
 	render(getHTMLFromArray(get10Posts()));
 }
 
@@ -174,149 +150,22 @@ function removeAllChild() {
 	}
 }
 
-function sortByDate(a,b) {	
-	return Date.parse(b.createdAt) - Date.parse(a.createdAt);
-}
-
-function getTagsFromPost(post) {
-	return Array.from(Array.from(post.getElementsByClassName('tags'))[0].childNodes).map(li => {
-		return li = li.textContent;
-	});
-}
-
-function equalArrays(arr1, arr2) {
-	arr1.sort();
-	arr2.sort();
-	return arr1.toString() == arr2.toString();	
-}
-
-function arrayIncludes(post, tag, count) {
+function countOfIncludes(post, tag) {
 	let counter = 0;
-	for (let j = 0; j < tag.length; j++) {
-		if (post.includes(tag[j])) counter++;
+	for (let i = 0; i < tag.length; i++) {
+		for (let j = 0; j < post.length; j++) {
+			if (tag[j] === post[i]) counter++;
+		}
 	}
-	return counter === count;
-}
+	return counter;
+} 
 
 function sortPostsByTags() {
 	const sort_tags = localStorage.getItem('tags_sort').split(' ');
-	let arr1 = [];
-	let arr2 = [];
-	let arr3 = [];
-	let arr4 = [];
-	let arr5 = [];
-	let arr6 = [];
-	let rest = [];
-	if (sort_tags.length === 0) location.reload();
-
-	if (sort_tags.length === 1) {
-		DATA.forEach(post => {
-			const post_tags = post.tags;
-			if (post_tags.length === 1) {
-				if (post_tags.includes(sort_tags[0])) arr1.push(post);
-				else rest.push(post);
-			} 
-			if (post_tags.length === 2) {
-				if (post_tags.includes(sort_tags[0])) arr2.push(post);
-				else rest.push(post);
-			}  
-			if (post_tags.length === 3) {
-				if (post_tags.includes(sort_tags[0])) arr3.push(post);
-				else rest.push(post);
-			}
-		});
-		arr1.sort(sortByDate);
-		arr2.sort(sortByDate);
-		arr3.sort(sortByDate);
-		rest.sort(sortByDate);
-		SORTED = [...arr1.concat(arr2.concat(arr3.concat(rest)))];
-	}
-
-	if (sort_tags.length === 2) {	
-		DATA.forEach(post => {
-			const post_tags = post.tags;
-			if (post_tags.length === 2) {
-				if (equalArrays(sort_tags, post_tags)) arr1.push(post);
-				else if (post_tags.includes(sort_tags[0]) || post_tags.includes(sort_tags[1])) arr4.push(post);
-				else rest.push(post);
-			}	
-			if (post_tags.length === 3) {
-				if (post_tags.includes(sort_tags[0]) && post_tags.includes(sort_tags[1])) arr2.push(post);
-				else if (post_tags.includes(sort_tags[0]) || post_tags.includes(sort_tags[1])) arr5.push(post);
-				else rest.push(post);
-			}
-			if (post_tags.length === 1) {
-				if (post_tags.includes(sort_tags[0]) || post_tags.includes(sort_tags[1])) arr3.push(post);
-				else rest.push(post);
-			}	
-		})		
-		arr1.sort(sortByDate);
-		arr2.sort(sortByDate);
-		arr3.sort(sortByDate);
-		arr4.sort(sortByDate);
-		arr5.sort(sortByDate);
-		rest.sort(sortByDate);
-		SORTED = [...arr1.concat(arr2.concat(arr3.concat(arr4.concat(arr5.concat(rest)))))];				
-	}
-
-	if (sort_tags.length === 3) {
-		DATA.forEach(post => {
-			const post_tags = post.tags;
-			if (post_tags.length === 3) {
-				if (equalArrays(sort_tags, post_tags)) arr1.push(post);
-				else if (arrayIncludes(post_tags, sort_tags, 2)) arr3.push(post);
-				else if (arrayIncludes(post_tags, sort_tags, 1)) arr6.push(post);
-				else rest.push(post); 
-			}
-			if (post_tags.length === 2) {
-				if (arrayIncludes(post_tags, sort_tags, 2)) arr2.push(post);
-				else if (arrayIncludes(post_tags, sort_tags, 1)) arr5.push(post);
-				else rest.push(post);
-			}
-			if (post_tags.length === 1) {
-				if (arrayIncludes(post_tags, sort_tags, 1)) arr4.push(post);
-				else rest.push(post);
-			}		
-			arr1.sort(sortByDate);
-			arr2.sort(sortByDate);
-			arr3.sort(sortByDate);
-			arr4.sort(sortByDate);
-			arr5.sort(sortByDate);
-			arr6.sort(sortByDate);
-			rest.sort(sortByDate);
-			SORTED = [...arr1.concat(arr2.concat(arr3.concat(arr4.concat(arr5.concat(arr6.concat(rest))))))];
-		});
-	}
-
-	if (sort_tags.length > 3) {
-		DATA.forEach(post => {
-			const post_tags = post.tags;
-			if (post_tags.length === 3) {
-				if (arrayIncludes(sort_tags, post_tags, 3)) arr1.push(post);
-				else if (arrayIncludes(post_tags, sort_tags, 2)) arr3.push(post);
-				else if (arrayIncludes(post_tags, sort_tags, 1)) arr6.push(post);
-				else rest.push(post); 
-			}
-			if (post_tags.length === 2) {
-				if (arrayIncludes(post_tags, sort_tags, 2)) arr2.push(post);
-				else if (arrayIncludes(post_tags, sort_tags, 1)) arr5.push(post);
-				else rest.push(post);
-			}
-			if (post_tags.length === 1) {
-				if (arrayIncludes(post_tags, sort_tags, 1)) arr4.push(post);
-				else rest.push(post);
-			}		
-			arr1.sort(sortByDate);
-			arr2.sort(sortByDate);
-			arr3.sort(sortByDate);
-			arr4.sort(sortByDate);
-			arr5.sort(sortByDate);
-			arr6.sort(sortByDate);
-			rest.sort(sortByDate);
-			SORTED = [...arr1.concat(arr2.concat(arr3.concat(arr4.concat(arr5.concat(arr6.concat(rest))))))];
-		});			
-	}
-
+	SORTED.map(post => { post.percent = Math.pow(countOfIncludes(post.tags, sort_tags), 2) / (sort_tags.length * post.tags.length) * 100 });
+	SORTED.sort((a, b) => { return b.percent - a.percent });
+	SORTED.sort((a, b) => { if (a.percent === b.percent) return (Date.parse(b.createdAt) - Date.parse(a.createdAt)) });
+	SORTED.map(item => { delete item.percent });
 	removeAllChild();
 	localStorage.setItem('postIndex', 0);
 	render(getHTMLFromArray(get10Posts()));
