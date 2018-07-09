@@ -1,0 +1,72 @@
+
+body {
+    display: grid;
+    grid-template-rows: 30% auto; 
+    grid-row-gap: 5px;
+}
+#Header {
+    display: grid;
+    grid-template-rows: 70% auto;
+    grid-template-columns: 20% auto; 
+    grid-row-gap: 5px;
+}
+#search {
+    grid-column: 1 / 3;
+}
+#Content {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 300px); 
+}
+#up, #giveOnly10 {
+    text-decoration: none;
+    position: fixed;
+    bottom: 20px;
+    right: 30px;
+    z-index: 99;
+    border: 1px solid black;
+    background-color: white;
+    color: black;
+    cursor: pointer;
+    border-radius: 0px;
+    width: 50px;
+}
+#giveOnly10 {
+    bottom: 42px;
+}
+button, #search_input {
+    border: 1px solid black;
+    background-color: white;
+    color: black;
+    border-radius: 0px;
+    padding: 5px;
+    width: 100px;
+}
+#search_input {
+    width: calc(100% - 10px);
+}
+.post {
+    border: 1px solid black;
+}
+#tag_sort {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 100px);
+}
+input[type=checkbox] {
+    display: none;
+}
+.tag_name {
+    display: grid;
+}
+.tag label{
+    box-sizing: border-box;
+    margin-top: 5px;
+    width: 80px;
+    height: 30px;
+    box-sizing: border-box;
+    float: left;
+    border: 1px solid black;
+    text-align: center;
+}
+.tag input[type=checkbox]:checked + label {
+    background: springgreen;
+}

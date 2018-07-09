@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+        <meta charset="UTF-8">
+        <title>Posts</title>
+        <script src="script.js"></script>
+    </head>
+    <body>
+        <div id="Header">     
+            <div id="date_sort">
+                <button id="newer" onClick="sortPostsByDate()">Date <i class="fas fa-arrow-up"></i></button><br>
+                <button id="older" onClick="sortPostsByDate(-1)">Date <i class="fas fa-arrow-down"></i></button>
+            </div>
+            <div id="tag_sort"></div>
+            <div id="search">
+                <input type="text" id="search_input" placeholder="search">
+            </div>
+        </div>
+        <div id="Content"></div>
+    </body>
+    <a href="#top" id="up"><span>to top</span></a>
+    <button id="giveOnly10"><span>10 posts</span></a>
+</html>
