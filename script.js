@@ -33,7 +33,7 @@ window.onload = () => {
 				render(getHTMLFromArray(get10Posts()));				
 
 			if (!localStorage.getItem('been_here')) {
-				sortPostsByDate(-1);
+				sortPostsByDate();
 				localStorage.setItem('been_here', true);
 			} else if (localStorage.getItem('tags_sort')) sortPostsByTags();
 		})
