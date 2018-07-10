@@ -32,7 +32,7 @@ window.onscroll = function(e) {
 		disableScroll();
 		render(getHTMLFromArray(get10Posts()));
 		enableScroll();
-	}		
+	}
 };
 
 function getData() {	
@@ -88,8 +88,12 @@ function deletePost(event) {
 	SORTED.splice([SORTED.indexOf(SORTED.find(item => {return item.title === event.parentNode.id}))], 1);
 }
 
-function giveTenPosts() { 
-	location.reload(); 
+function giveTenPosts() {
+	removeAllChild();
+	localStorage.setItem('postIndex', 10);
+	disableScroll();
+	render(getHTMLFromArray(SORTED.slice(0, 10)));
+	enableScroll();	
 }
 
 function search(event) {
